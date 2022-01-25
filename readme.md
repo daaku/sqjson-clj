@@ -10,11 +10,11 @@ Treat SQLite as a JSON DB.
 Documentation: https://cljdoc.org/d/org.clojars.daaku/sqjson
 
 TODO:
-- [:in seq]
 - count
 - list
 - plan
 - delete/update all
 - better where clauses
+  - [:in seq]
 - created-at, updated-at
 - transaction

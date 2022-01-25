@@ -18,7 +18,13 @@
                                     :decode keyword}
                            PersistentHashSet {:tag "!set"
                                               :encode jt/encode-collection
-                                              :decode set}}})]}))
+                                              :decode set}
+                           java.time.OffsetDateTime {:tag "!odt"
+                                                     :encode jt/encode-str
+                                                     :decode #(java.time.OffsetDateTime/parse %)}
+                           java.time.LocalDateTime {:tag "!ldt"
+                                                    :encode jt/encode-str
+                                                    :decode #(java.time.LocalDateTime/parse %)}}})]}))
 
 (defn make-options [{:keys [mapper table]
                      :or {mapper mapper table "doc"}}]

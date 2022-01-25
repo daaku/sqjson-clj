@@ -14,16 +14,27 @@
 (def where
   [[{:c1 1} ["c1 = ?" 1]]
    [{:c1 1 :c2 2} ["c1 = ? and c2 = ?" 1 2]]
+   [[:= :c1 1] ["c1 = ?" 1]]
    [[[:= :c1 1] [:> :c2 2]]
     "c1 = ? and c2 > ?" 1 2]
    [[:or [:= :c1 1] [:> :c2 2]]
-    "c1 = ? and c2 > ?" 1 2]])
+    "c1 = ? or c2 > ?" 1 2]])
 
 (deftest unique-id-index
   (let [db (make-test-db)
         doc (sqjson/insert db yoda)]
     (is (thrown-with-msg? org.sqlite.SQLiteException #"SQLITE_CONSTRAINT_UNIQUE"
                           (sqjson/insert db doc)))))
+
+(deftest json-mapper
+  (let [db (make-test-db)
+        doc {:id 1
+             :keyword :keyword
+             :set #{:a :b}
+             :vec [1 2]
+             :offset-date-time (java.time.OffsetDateTime/now)
+             :local-date-time (java.time.LocalDateTime/now)}]
+    (is (= doc (sqjson/insert db doc)))))
 
 (deftest insert-get-delete-get
   (let [db (make-test-db)
