@@ -1,7 +1,7 @@
 (ns daaku.sqjson
   "Treat SQLite as a JSON DB."
 
-  (:refer-clojure :exclude [get replace])
+  (:refer-clojure :exclude [get replace count])
   (:require [clojure.string :as str]
             [jsonista.core :as j]
             [jsonista.tagged :as jt]
