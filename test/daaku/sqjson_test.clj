@@ -103,3 +103,6 @@
         yoda (sqjson/insert db yoda)
         leia (sqjson/insert db leia)]
     (is (= #{yoda leia} (set (sqjson/select db {:movie :star-wars}))))))
+
+(deftest select-empty
+  (is (empty? (sqjson/select (make-test-db) {:foo :bar}))))

@@ -5,8 +5,11 @@
   (:require [clojure.string :as str]
             [jsonista.core :as j]
             [jsonista.tagged :as jt]
-            [next.jdbc :as jdbc])
+            [next.jdbc :as jdbc]
+            [next.jdbc.result-set :as rs])
   (:import (clojure.lang Keyword PersistentHashSet)))
+
+(def ^:private jdbc-opts {:builder-fn rs/as-arrays})
 
 (def ^:private mapper
   (j/object-mapper
@@ -28,8 +31,7 @@
 
 (defn make-options [{:keys [mapper table]
                      :or {mapper mapper table "doc"}}]
-  {:kw (keyword table "data")
-   :migrations [(str "create table if not exists " table "(data text)")
+  {:migrations [(str "create table if not exists " table "(data text)")
                 (str "create unique index if not exists " table "_id on " table "(json_extract(data, '$.id'))")]
    :insert (str "insert into " table "(data) values(?) returning data")
    :select (str "select data from " table " where ")
@@ -72,41 +74,44 @@
 
 (defn insert [ds doc]
   (->
-   (jdbc/execute-one! ds [(:insert *opts*) (-> doc add-id encode-doc)])
-   ((:kw *opts*))
+   (jdbc/execute-one! ds [(:insert *opts*) (-> doc add-id encode-doc)] jdbc-opts)
+   first
    decode-doc))
 
 (defn get [ds where]
   (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:select *opts*) sql " limit 1")] params))
-            ((:kw *opts*))
+    (some-> (jdbc/execute-one! ds (concat [(str (:select *opts*) sql " limit 1")] params) jdbc-opts)
+            first
             decode-doc)))
 
 (defn delete [ds where]
   (let [[sql params] (encode-where where)]
     (some-> (jdbc/execute-one! ds (concat [(str (:delete-one *opts*) sql " limit 1) returning data")]
-                                          params))
-            ((:kw *opts*))
+                                          params)
+                               jdbc-opts)
+            first
             decode-doc)))
 
 (defn patch [ds where patch]
   (let [[sql params] (encode-where where)]
     (some-> (jdbc/execute-one! ds (concat [(str (:patch-one *opts*) sql " limit 1) returning data")]
-                                          [(encode-doc patch)] params))
-            ((:kw *opts*))
+                                          [(encode-doc patch)] params)
+                               jdbc-opts)
+            first
             decode-doc)))
 
 (defn replace [ds where doc]
   (let [[sql params] (encode-where where)]
     (some-> (jdbc/execute-one! ds (concat [(str (:replace-one *opts*) sql " limit 1) returning data")]
-                                          [(encode-doc doc)] params))
-            ((:kw *opts*))
+                                          [(encode-doc doc)] params)
+                               jdbc-opts)
+            first
             decode-doc)))
 
 (defn upsert [ds doc]
   (->
-   (jdbc/execute-one! ds [(:upsert *opts*) (-> doc add-id encode-doc)])
-   ((:kw *opts*))
+   (jdbc/execute-one! ds [(:upsert *opts*) (-> doc add-id encode-doc)] jdbc-opts)
+   first
    decode-doc))
 
 (defn count [ds where]
@@ -116,5 +121,5 @@
 
 (defn select [ds where]
   (let [[sql params] (encode-where where)]
-    (map (comp decode-doc (:kw *opts*))
-         (jdbc/execute! ds (concat [(str (:select *opts*) sql)] params)))))
+    (map (comp decode-doc first)
+         (rest (jdbc/execute! ds (concat [(str (:select *opts*) sql)] params) jdbc-opts)))))
