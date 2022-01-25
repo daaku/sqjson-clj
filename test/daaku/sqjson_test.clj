@@ -1,4 +1,5 @@
 (ns daaku.sqjson-test
+  (:refer-clojure :exclude [replace])
   (:require [clojure.test :refer [deftest is]]
             [daaku.sqjson :as sqjson]
             [next.jdbc :as jdbc]))
