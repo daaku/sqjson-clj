@@ -113,3 +113,8 @@
   (let [[sql params] (encode-where where)]
     (-> (jdbc/execute-one! ds (concat [(str (:count *opts*) sql)] params))
         :count)))
+
+(defn select [ds where]
+  (let [[sql params] (encode-where where)]
+    (map (comp decode-doc (:kw *opts*))
+         (jdbc/execute! ds (concat [(str (:select *opts*) sql)] params)))))

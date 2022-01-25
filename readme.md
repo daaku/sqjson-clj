@@ -10,8 +10,6 @@ Treat SQLite as a JSON DB.
 Documentation: https://cljdoc.org/d/org.clojars.daaku/sqjson
 
 TODO:
-- list
-- plan
 - delete/update all
 - better where clauses
   - [:in seq]

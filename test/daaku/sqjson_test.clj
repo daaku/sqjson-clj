@@ -97,3 +97,9 @@
     (sqjson/insert db yoda)
     (sqjson/insert db leia)
     (is (= 2 (sqjson/count db {:movie :star-wars})))))
+
+(deftest select
+  (let [db (make-test-db)
+        yoda (sqjson/insert db yoda)
+        leia (sqjson/insert db leia)]
+    (is (= #{yoda leia} (set (sqjson/select db {:movie :star-wars}))))))
