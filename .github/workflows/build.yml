@@ -1,0 +1,29 @@
+name: build
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Java
+      uses: actions/setup-java@v2.3.1
+      with:
+        distribution: "temurin"
+        java-version: "17"
+    - name: Set up Lein
+      run: |
+        curl https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein > /home/linuxbrew/.linuxbrew/bin/lein
+        chmod +x /home/linuxbrew/.linuxbrew/bin/lein
+    - name: Checkout
+      uses: actions/checkout@v2.3.4
+    - name: Cache
+      uses: actions/cache@v2.1.6
+      with:
+        path: |
+          ~/.m2/repository
+          ~/.lein
+        key: ${{ runner.os }}-maven-${{ hashFiles('project.clj') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    - name: Test
+      run: lein test

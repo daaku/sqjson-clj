@@ -1,0 +1,9 @@
+/*.jar
+/.clj-kondo
+/.cljs_node_repl
+/.lein-failures
+/.nrepl-port
+/.rebel_readline_history
+/out
+/pom.xml
+/target
