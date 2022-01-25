@@ -92,7 +92,7 @@
           [(str (encode-path p) (name op) "?") [(encode-sql-param v)]])
 
         (contains? #{:or :and} op)
-        (encode-where-seq-join op va)
+        (encode-where-seq-join op (remove nil? va))
 
         :else
         (throw (ex-info "unexpected where" {:where where}))))

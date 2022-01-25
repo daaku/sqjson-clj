@@ -44,6 +44,10 @@
   (where-test [:or [:= :c1 1] [:> :c2 2]]
               ["(c1=? or c2>?)" 1 2]))
 
+(deftest where-seq-with-nil
+  (where-test [:or [:= :c1 1] nil]
+              ["c1=?" 1]))
+
 (deftest unique-id-index
   (let [db (make-test-db)
         doc (sqjson/insert db yoda)]
