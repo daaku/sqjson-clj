@@ -39,13 +39,13 @@
    :upsert (str "insert into " table "(data) values(?) on conflict(json_extract(data, '$.id')) do update set data = excluded.data returning data")
    :mapper mapper})
 
-(def opts (make-options {}))
+(def ^:dynamic *opts* (make-options {}))
 
 (defn encode-doc [doc]
-  (j/write-value-as-string doc (:mapper opts)))
+  (j/write-value-as-string doc (:mapper *opts*)))
 
 (defn decode-doc [s]
-  (j/read-value s (:mapper opts)))
+  (j/read-value s (:mapper *opts*)))
 
 (defn encode-path [p]
   (str "json_extract(data, '$." (name p) "')"))
@@ -71,39 +71,39 @@
 
 (defn insert [ds doc]
   (->
-   (jdbc/execute-one! ds [(:insert opts) (-> doc add-id encode-doc)])
-   ((:kw opts))
+   (jdbc/execute-one! ds [(:insert *opts*) (-> doc add-id encode-doc)])
+   ((:kw *opts*))
    decode-doc))
 
 (defn get [ds where]
   (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:select opts) sql " limit 1")] params))
-            ((:kw opts))
+    (some-> (jdbc/execute-one! ds (concat [(str (:select *opts*) sql " limit 1")] params))
+            ((:kw *opts*))
             decode-doc)))
 
 (defn delete [ds where]
   (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:delete-one opts) sql " limit 1) returning data")]
+    (some-> (jdbc/execute-one! ds (concat [(str (:delete-one *opts*) sql " limit 1) returning data")]
                                           params))
-            ((:kw opts))
+            ((:kw *opts*))
             decode-doc)))
 
 (defn patch [ds where patch]
   (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:patch-one opts) sql " limit 1) returning data")]
+    (some-> (jdbc/execute-one! ds (concat [(str (:patch-one *opts*) sql " limit 1) returning data")]
                                           [(encode-doc patch)] params))
-            ((:kw opts))
+            ((:kw *opts*))
             decode-doc)))
 
 (defn replace [ds where doc]
   (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:replace-one opts) sql " limit 1) returning data")]
+    (some-> (jdbc/execute-one! ds (concat [(str (:replace-one *opts*) sql " limit 1) returning data")]
                                           [(encode-doc doc)] params))
-            ((:kw opts))
+            ((:kw *opts*))
             decode-doc)))
 
 (defn upsert [ds doc]
   (->
-   (jdbc/execute-one! ds [(:upsert opts) (-> doc add-id encode-doc)])
-   ((:kw opts))
+   (jdbc/execute-one! ds [(:upsert *opts*) (-> doc add-id encode-doc)])
+   ((:kw *opts*))
    decode-doc))

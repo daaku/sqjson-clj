@@ -9,7 +9,7 @@
 
 (defn- make-test-db []
   (let [ds (jdbc/get-connection (jdbc/get-datasource "jdbc:sqlite::memory:"))]
-    (run! #(next.jdbc/execute! ds [%]) (:migrations sqjson/opts))
+    (run! #(next.jdbc/execute! ds [%]) (:migrations sqjson/*opts*))
     ds))
 
 (def where
