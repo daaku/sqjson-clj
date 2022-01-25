@@ -10,7 +10,6 @@ Treat SQLite as a JSON DB.
 Documentation: https://cljdoc.org/d/org.clojars.daaku/sqjson
 
 TODO:
-- count
 - list
 - plan
 - delete/update all

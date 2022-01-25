@@ -4,8 +4,8 @@
             [daaku.sqjson :as sqjson]
             [next.jdbc :as jdbc]))
 
-(def yoda {:name "yoda" :age 900})
-(def leia {:name "leia" :age 60})
+(def yoda {:name "yoda" :movie :star-wars :age 900})
+(def leia {:name "leia" :movie :star-wars :age 60})
 
 (defn- make-test-db []
   (let [ds (jdbc/get-connection (jdbc/get-datasource "jdbc:sqlite::memory:"))]
@@ -90,3 +90,10 @@
         "upsert returns new doc")
     (is (= leia-with-id (sqjson/get db {:id id}))
         "get returns new doc")))
+
+(deftest count
+  (let [db (make-test-db)]
+    (is (= 0 (sqjson/count db {:movie :star-wars})))
+    (sqjson/insert db yoda)
+    (sqjson/insert db leia)
+    (is (= 2 (sqjson/count db {:movie :star-wars})))))
