@@ -113,11 +113,11 @@
     (is (= #{yoda leia} (set (sqjson/select db {:movie :star-wars}))))))
 
 (deftest select-empty
-  (is (empty? (sqjson/select (make-test-db) {:foo :bar}))))
+  (is (empty? (sqjson/select (make-test-db) {}))))
 
 (deftest delete-all
   (let [db (make-test-db)]
-    (is (= 0 (sqjson/delete-all db {:movie :star-wars})))
+    (is (= 0 (sqjson/delete-all db {})))
     (sqjson/insert db yoda)
     (sqjson/insert db leia)
-    (is (= 2 (sqjson/delete-all db {:movie :star-wars})))))
+    (is (= 2 (sqjson/delete-all db {})))))
