@@ -19,7 +19,11 @@
       (str/replace "c2" (sqjson/encode-path "c2"))))
 
 (defn- where-test [in out]
-  (is (= (sqjson/encode-where in) [(where-sql (first out)) (rest out)])))
+  (is (= [(where-sql (first out)) (rest out)] (sqjson/encode-where in))))
+
+(deftest where-unexpected
+  (is (thrown? RuntimeException #"unexpected where"
+               (sqjson/encode-where #{:a}))))
 
 (deftest where-map
   (where-test {:c1 1} ["c1=?" 1]))
@@ -27,11 +31,11 @@
 (deftest where-map-and
   (where-test {:c1 1 :c2 2} ["c1=? and c2=?" 1 2]))
 
+(deftest where-seq
+  (where-test [:> :c1 1] ["c1>?" 1]))
+
 (def where-tests
-  [["a map"
-    {:c1 1}]
-   ["and map"]
-   [[:= :c1 1] ["c1=?" 1]]
+  [[[:= :c1 1] ["c1=?" 1]]
    [[[:= :c1 1] [:> :c2 2]]
     "c1=? and c2>?" 1 2]
    [[:or [:= :c1 1] [:> :c2 2]]

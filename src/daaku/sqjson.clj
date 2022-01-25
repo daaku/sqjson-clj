@@ -66,12 +66,19 @@
                 where)]
     [(str/join " and " (persistent! sql)) (persistent! params)]))
 
+(defn encode-where-seq [where]
+  (let [[op p v] where]
+    [(str (encode-path p) (name op) "?") [v]]))
+
 (defn encode-where [where]
   (cond (empty? where)
         ["true"]
 
         (map? where)
         (encode-where-map where)
+
+        (sequential? where)
+        (encode-where-seq where)
 
         :else
         (throw (ex-info "unexpected where" {:where where}))))
