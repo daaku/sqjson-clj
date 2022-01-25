@@ -74,62 +74,46 @@
     doc
     (assoc doc :id (.toString (java.util.UUID/randomUUID)))))
 
+(defmacro ^:private one-doc [ds params]
+  `(some-> (jdbc/execute-one! ~ds ~params jdbc-opts)
+           first
+           decode-doc))
+
+(defmacro ^:private one-where [ds sql-key sql-suffix where params-prefix]
+  `(let [[sql# params#] (encode-where ~where)]
+     (one-doc ~ds (concat [(str (~sql-key *opts*) sql# ~sql-suffix)] ~params-prefix params#))))
+
+(defmacro ^:private one-val [ds sql-key where params-prefix kw]
+  `(let [[sql# params#] (encode-where ~where)]
+     (-> (jdbc/execute-one! ~ds (concat [(str (~sql-key *opts*) sql#)] ~params-prefix params#))
+         ~kw)))
+
 (defn insert [ds doc]
-  (->
-   (jdbc/execute-one! ds [(:insert *opts*) (-> doc add-id encode-doc)] jdbc-opts)
-   first
-   decode-doc))
+  (one-doc ds [(:insert *opts*) (-> doc add-id encode-doc)]))
 
 (defn get [ds where]
-  (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:select *opts*) sql " limit 1")] params) jdbc-opts)
-            first
-            decode-doc)))
+  (one-where ds :select " limit 1" where nil))
 
 (defn delete [ds where]
-  (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:delete-one *opts*) sql " limit 1) returning data")]
-                                          params)
-                               jdbc-opts)
-            first
-            decode-doc)))
+  (one-where ds :delete-one " limit 1) returning data" where nil))
 
 (defn delete-all [ds where]
-  (let [[sql params] (encode-where where)]
-    (-> (jdbc/execute-one! ds (concat [(str (:delete-all *opts*) sql)] params))
-        :next.jdbc/update-count)))
+  (one-val ds :delete-all where nil :next.jdbc/update-count))
 
 (defn patch [ds where patch]
-  (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:patch-one *opts*) sql " limit 1) returning data")]
-                                          [(encode-doc patch)] params)
-                               jdbc-opts)
-            first
-            decode-doc)))
+  (one-where ds :patch-one " limit 1) returning data" where [(encode-doc patch)]))
 
 (defn patch-all [ds where patch]
-  (let [[sql params] (encode-where where)]
-    (-> (jdbc/execute-one! ds (concat [(str (:patch-all *opts*) sql)] [(encode-doc patch)] params))
-        :next.jdbc/update-count)))
+  (one-val ds :patch-all where [(encode-doc patch)] :next.jdbc/update-count))
 
 (defn replace [ds where doc]
-  (let [[sql params] (encode-where where)]
-    (some-> (jdbc/execute-one! ds (concat [(str (:replace-one *opts*) sql " limit 1) returning data")]
-                                          [(encode-doc doc)] params)
-                               jdbc-opts)
-            first
-            decode-doc)))
+  (one-where ds :replace-one " limit 1) returning data" where [(encode-doc doc)]))
 
 (defn upsert [ds doc]
-  (->
-   (jdbc/execute-one! ds [(:upsert *opts*) (-> doc add-id encode-doc)] jdbc-opts)
-   first
-   decode-doc))
+  (one-doc ds [(:upsert *opts*) (-> doc add-id encode-doc)]))
 
 (defn count [ds where]
-  (let [[sql params] (encode-where where)]
-    (-> (jdbc/execute-one! ds (concat [(str (:count *opts*) sql)] params))
-        :count)))
+  (one-val ds :count where nil :count))
 
 (defn select [ds where]
   (let [[sql params] (encode-where where)]
