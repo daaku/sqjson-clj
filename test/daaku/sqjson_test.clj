@@ -29,17 +29,18 @@
   (where-test {:c1 1} ["c1=?" 1]))
 
 (deftest where-map-and
-  (where-test {:c1 1 :c2 2} ["c1=? and c2=?" 1 2]))
+  (where-test {:c1 1 :c2 2} ["(c1=? and c2=?)" 1 2]))
 
 (deftest where-seq
   (where-test [:> :c1 1] ["c1>?" 1]))
 
-(def where-tests
-  [[[:= :c1 1] ["c1=?" 1]]
-   [[[:= :c1 1] [:> :c2 2]]
-    "c1=? and c2>?" 1 2]
-   [[:or [:= :c1 1] [:> :c2 2]]
-    "c1=? or c2>?" 1 2]])
+(deftest where-seq-and
+  (where-test [:and [:= :c1 1] [:> :c2 2]]
+              ["(c1=? and c2>?)" 1 2]))
+
+(deftest where-seq-or
+  (where-test [:or [:= :c1 1] [:> :c2 2]]
+              ["(c1=? or c2>?)" 1 2]))
 
 (deftest unique-id-index
   (let [db (make-test-db)

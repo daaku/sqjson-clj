@@ -52,23 +52,50 @@
 (defn decode-doc [s]
   (j/read-value s (:mapper *opts*)))
 
+(defn encode-sql-param [v]
+  (if (or (string? v) (number? v))
+    v
+    (encode-doc v)))
+
 (defn encode-path [p]
   (str "json_extract(data, '$." (name p) "')"))
+
+(defn- join-sql [op parts]
+  (if (= 1 (clojure.core/count parts))
+    (first parts)
+    (str "(" (str/join (str " " (name op) " ") parts) ")")))
+
+(declare encode-where)
 
 (defn encode-where-map [where]
   (let [[sql params]
         (reduce (fn [[sql params] [p v]]
                   [(conj! sql (str (encode-path p) "=?"))
-                   (conj! params (if (or (string? v) (number? v))
-                                   v
-                                   (encode-doc v)))])
+                   (conj! params (encode-sql-param v))])
                 [(transient []) (transient [])]
                 where)]
-    [(str/join " and " (persistent! sql)) (persistent! params)]))
+    [(join-sql :and (persistent! sql)) (persistent! params)]))
 
-(defn encode-where-seq [where]
-  (let [[op p v] where]
-    [(str (encode-path p) (name op) "?") [v]]))
+(defn- encode-where-seq-join [op va]
+  (let [[sql params]
+        (reduce (fn [[sql params] where]
+                  (let [[sql' params'] (encode-where where)]
+                    [(conj! sql sql')
+                     (conj! params params')]))
+                [(transient []) (transient [])]
+                va)]
+    [(join-sql op (persistent! sql)) (apply concat (persistent! params))]))
+
+(defn encode-where-seq [[op & va :as where]]
+  (cond (contains? #{:= :> :>= :< :<= :<>} op)
+        (let [[p v] va]
+          [(str (encode-path p) (name op) "?") [(encode-sql-param v)]])
+
+        (contains? #{:or :and} op)
+        (encode-where-seq-join op va)
+
+        :else
+        (throw (ex-info "unexpected where" {:where where}))))
 
 (defn encode-where [where]
   (cond (empty? where)
