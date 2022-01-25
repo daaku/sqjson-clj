@@ -23,7 +23,9 @@
 
 (deftest where-unexpected
   (is (thrown? RuntimeException #"unexpected where"
-               (sqjson/encode-where #{:a}))))
+               (sqjson/encode-where #{:a})))
+  (is (thrown? RuntimeException #"unexpected where"
+               (sqjson/encode-where [:a]))))
 
 (deftest where-map
   (where-test {:c1 1} ["c1=?" 1]))
