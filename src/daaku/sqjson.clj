@@ -86,7 +86,7 @@
                 va)]
     [(join-sql op (persistent! sql)) (apply concat (persistent! params))]))
 
-(defn- where-bin-op [op]
+(defn- op-str [op]
   (case op
     := "="
     :> ">"
@@ -95,15 +95,22 @@
     :<= "<="
     :<> "<>"
     :like " like "
-    :not-like " not like "))
+    :not-like " not like "
+    :in " in "
+    :not-in " not in "))
 
 (defn encode-where-seq [[op & va :as where]]
   (cond (contains? #{:= :> :>= :< :<= :<> :like :not-like} op)
         (let [[p v] va]
-          [(str (encode-path p) (where-bin-op op) "?") [(encode-sql-param v)]])
+          [(str (encode-path p) (op-str op) "?") [(encode-sql-param v)]])
 
         (contains? #{:or :and} op)
         (encode-where-seq-join op (remove nil? va))
+
+        (contains? #{:in :not-in} op)
+        (let [[p v] va]
+          [(str (encode-path p) (op-str op) "(" (str/join "," (repeat (clojure.core/count v) "?")) ")")
+           (map encode-sql-param v)])
 
         :else
         (throw (ex-info "unexpected where" {:where where}))))

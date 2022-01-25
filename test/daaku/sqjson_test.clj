@@ -56,6 +56,14 @@
   (where-test [:not-like :c1 1]
               ["c1 not like ?" 1]))
 
+(deftest where-in
+  (where-test [:in :c1 [1 2]]
+              ["c1 in (?,?)" 1 2]))
+
+(deftest where-not-in
+  (where-test [:not-in :c1 [1 2]]
+              ["c1 not in (?,?)" 1 2]))
+
 (deftest unique-id-index
   (let [db (make-test-db)
         doc (sqjson/insert db yoda)]
