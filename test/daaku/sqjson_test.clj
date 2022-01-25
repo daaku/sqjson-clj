@@ -69,6 +69,14 @@
     (is (= with-gender-age (sqjson/get db {:id id}))
         "get includes gender-age")))
 
+(deftest patch-all
+  (let [db (make-test-db)]
+    (is (= 0 (sqjson/patch-all db {:movie :star-wars} {:release 1977})))
+    (sqjson/insert db yoda)
+    (sqjson/insert db leia)
+    (is (= 2 (sqjson/patch-all db {:movie :star-wars} {:release 1977})))
+    (is (= [1977 1977] (map :release (sqjson/select db {:movie :star-wars}))))))
+
 (deftest replace
   (let [db (make-test-db)
         {:keys [id] :as doc} (sqjson/insert db yoda)
@@ -113,11 +121,3 @@
     (sqjson/insert db yoda)
     (sqjson/insert db leia)
     (is (= 2 (sqjson/delete-all db {:movie :star-wars})))))
-
-(deftest patch-all
-  (let [db (make-test-db)]
-    (is (= 0 (sqjson/patch-all db {:movie :star-wars} {:release 1977})))
-    (sqjson/insert db yoda)
-    (sqjson/insert db leia)
-    (is (= 2 (sqjson/patch-all db {:movie :star-wars} {:release 1977})))
-    (is (= [1977 1977] (map :release (sqjson/select db {:movie :star-wars}))))))
