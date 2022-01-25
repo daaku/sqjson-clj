@@ -86,10 +86,21 @@
                 va)]
     [(join-sql op (persistent! sql)) (apply concat (persistent! params))]))
 
+(defn- where-bin-op [op]
+  (case op
+    := "="
+    :> ">"
+    :>= ">="
+    :< "<"
+    :<= "<="
+    :<> "<>"
+    :like " like "
+    :not-like " not like "))
+
 (defn encode-where-seq [[op & va :as where]]
-  (cond (contains? #{:= :> :>= :< :<= :<>} op)
+  (cond (contains? #{:= :> :>= :< :<= :<> :like :not-like} op)
         (let [[p v] va]
-          [(str (encode-path p) (name op) "?") [(encode-sql-param v)]])
+          [(str (encode-path p) (where-bin-op op) "?") [(encode-sql-param v)]])
 
         (contains? #{:or :and} op)
         (encode-where-seq-join op (remove nil? va))

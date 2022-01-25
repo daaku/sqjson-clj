@@ -48,6 +48,14 @@
   (where-test [:or [:= :c1 1] nil]
               ["c1=?" 1]))
 
+(deftest where-like
+  (where-test [:like :c1 1]
+              ["c1 like ?" 1]))
+
+(deftest where-not-like
+  (where-test [:not-like :c1 1]
+              ["c1 not like ?" 1]))
+
 (deftest unique-id-index
   (let [db (make-test-db)
         doc (sqjson/insert db yoda)]
