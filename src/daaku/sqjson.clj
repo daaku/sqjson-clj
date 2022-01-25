@@ -36,6 +36,7 @@
    :insert (str "insert into " table "(data) values(?) returning data")
    :select (str "select data from " table " where ")
    :delete-one (str "delete from " table " where rowid in (select rowid from " table " where ")
+   :delete-all (str "delete from " table " where ")
    :patch-one (str "update " table " set data = json_patch(data, ?) where rowid in (select rowid from " table " where ")
    :replace-one (str "update " table " set data = ? where rowid in (select rowid from " table " where ")
    :upsert (str "insert into " table "(data) values(?) on conflict(json_extract(data, '$.id')) do update set data = excluded.data returning data")
@@ -91,6 +92,11 @@
                                jdbc-opts)
             first
             decode-doc)))
+
+(defn delete-all [ds where]
+  (let [[sql params] (encode-where where)]
+    (-> (jdbc/execute-one! ds (concat [(str (:delete-all *opts*) sql)] params))
+        :next.jdbc/update-count)))
 
 (defn patch [ds where patch]
   (let [[sql params] (encode-where where)]

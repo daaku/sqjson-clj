@@ -106,3 +106,10 @@
 
 (deftest select-empty
   (is (empty? (sqjson/select (make-test-db) {:foo :bar}))))
+
+(deftest delete-all
+  (let [db (make-test-db)]
+    (is (= 0 (sqjson/delete-all db {:movie :star-wars})))
+    (sqjson/insert db yoda)
+    (sqjson/insert db leia)
+    (is (= 2 (sqjson/delete-all db {:movie :star-wars})))))

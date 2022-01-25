@@ -13,5 +13,3 @@ TODO:
 - delete/update all
 - better where clauses
   - [:in seq]
-- created-at, updated-at
-- transaction
