@@ -1,6 +1,7 @@
 (ns daaku.sqjson-test
   (:refer-clojure :exclude [replace count])
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is]]
             [daaku.sqjson :as sqjson]
             [next.jdbc :as jdbc]))
 
@@ -12,14 +13,29 @@
     (run! #(next.jdbc/execute! ds [%]) (:migrations sqjson/*opts*))
     ds))
 
-(def where
-  [[{:c1 1} ["c1 = ?" 1]]
-   [{:c1 1 :c2 2} ["c1 = ? and c2 = ?" 1 2]]
-   [[:= :c1 1] ["c1 = ?" 1]]
+(defn- where-sql [sql]
+  (-> sql
+      (str/replace "c1" (sqjson/encode-path "c1"))
+      (str/replace "c2" (sqjson/encode-path "c2"))))
+
+(defn- where-test [in out]
+  (is (= (sqjson/encode-where in) [(where-sql (first out)) (rest out)])))
+
+(deftest where-map
+  (where-test {:c1 1} ["c1=?" 1]))
+
+(deftest where-map-and
+  (where-test {:c1 1 :c2 2} ["c1=? and c2=?" 1 2]))
+
+(def where-tests
+  [["a map"
+    {:c1 1}]
+   ["and map"]
+   [[:= :c1 1] ["c1=?" 1]]
    [[[:= :c1 1] [:> :c2 2]]
-    "c1 = ? and c2 > ?" 1 2]
+    "c1=? and c2>?" 1 2]
    [[:or [:= :c1 1] [:> :c2 2]]
-    "c1 = ? or c2 > ?" 1 2]])
+    "c1=? or c2>?" 1 2]])
 
 (deftest unique-id-index
   (let [db (make-test-db)

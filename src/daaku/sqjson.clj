@@ -67,9 +67,14 @@
     [(str/join " and " (persistent! sql)) (persistent! params)]))
 
 (defn encode-where [where]
-  (if (empty? where)
-    ["true"]
-    (encode-where-map where)))
+  (cond (empty? where)
+        ["true"]
+
+        (map? where)
+        (encode-where-map where)
+
+        :else
+        (throw (ex-info "unexpected where" {:where where}))))
 
 (defn- add-id [doc]
   (if (contains? doc :id)
