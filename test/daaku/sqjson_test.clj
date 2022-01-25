@@ -13,6 +13,12 @@
     (run! #(next.jdbc/execute! ds [%]) (:migrations sqjson/*opts*))
     ds))
 
+(deftest where-unexpected
+  (is (thrown? RuntimeException #"unexpected where"
+               (sqjson/encode-where #{:a})))
+  (is (thrown? RuntimeException #"unexpected where"
+               (sqjson/encode-where [:a]))))
+
 (defn- where-sql [sql]
   (-> sql
       (str/replace "c1" (sqjson/encode-path "c1"))
@@ -20,12 +26,6 @@
 
 (defn- where-test [in out]
   (is (= [(where-sql (first out)) (rest out)] (sqjson/encode-where in))))
-
-(deftest where-unexpected
-  (is (thrown? RuntimeException #"unexpected where"
-               (sqjson/encode-where #{:a})))
-  (is (thrown? RuntimeException #"unexpected where"
-               (sqjson/encode-where [:a]))))
 
 (deftest where-map
   (where-test {:c1 1} ["c1=?" 1]))
