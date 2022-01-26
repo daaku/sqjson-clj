@@ -25,7 +25,7 @@
       (str/replace "c2" (sqjson/encode-path "c2"))))
 
 (defn- where-test [in out]
-  (is (= [(where-sql (first out)) (rest out)] (sqjson/encode-where in))))
+  (is (= [(where-sql (first out)) (seq (rest out))] (sqjson/encode-where in))))
 
 (deftest where-map
   (where-test {:c1 1} ["c1=?" 1]))
@@ -63,6 +63,14 @@
 (deftest where-not-in
   (where-test [:not-in :c1 [1 2]]
               ["c1 not in (?,?)" 1 2]))
+
+(deftest where-is-null
+  (where-test [:= :c1 nil]
+              ["c1 is null"]))
+
+(deftest where-is-not-null
+  (where-test [:<> :c1 nil]
+              ["c1 is not null"]))
 
 (deftest unique-id-index
   (let [db (make-test-db)

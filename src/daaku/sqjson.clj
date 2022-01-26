@@ -111,7 +111,14 @@
 (defn encode-where-seq [[op & va :as where]]
   (cond (contains? #{:= :> :>= :< :<= :<> :like :not-like} op)
         (let [[p v] va]
-          [(str (encode-path p) (op-str op) "?") [(encode-sql-param v)]])
+          (cond (and (nil? v) (= op :=))
+                [(str (encode-path p) " is null") nil]
+
+                (and (nil? v) (= op :<>))
+                [(str (encode-path p) " is not null") nil]
+
+                :else
+                [(str (encode-path p) (op-str op) "?") [(encode-sql-param v)]]))
 
         (contains? #{:or :and} op)
         (encode-where-seq-join op (remove nil? va))
