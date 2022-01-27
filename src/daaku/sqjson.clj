@@ -76,7 +76,7 @@
 
 (declare encode-where)
 
-(defn encode-where-map [where]
+(defn- encode-where-map [where]
   (let [[sql params]
         (reduce (fn [[sql params] [p v]]
                   [(conj! sql (str (encode-path p) "=?"))
@@ -108,7 +108,7 @@
     :in " in "
     :not-in " not in "))
 
-(defn encode-where-seq [[op & va :as where]]
+(defn- encode-where-seq [[op & va :as where]]
   (cond (contains? #{:= :> :>= :< :<= :<> :like :not-like} op)
         (let [[p v] va]
           (cond (and (nil? v) (= op :=))
