@@ -13,6 +13,12 @@
     (run! #(next.jdbc/execute! ds [%]) (:migrations sqjson/*opts*))
     ds))
 
+(deftest encode-sql-param
+  (is (= (sqjson/encode-sql-param "a") "a"))
+  (is (= (sqjson/encode-sql-param 1) 1))
+  (is (= (sqjson/encode-sql-param true) true))
+  (is (= (sqjson/encode-sql-param ["a"]) "[\"a\"]")))
+
 (deftest where-unexpected
   (is (thrown? RuntimeException #"unexpected where"
                (sqjson/encode-where #{:a})))

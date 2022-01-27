@@ -62,7 +62,7 @@
   (j/read-value s (:mapper *opts*)))
 
 (defn encode-sql-param [v]
-  (if (or (string? v) (number? v))
+  (if (or (string? v) (number? v) (boolean? v))
     v
     (encode-doc v)))
 
