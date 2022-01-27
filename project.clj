@@ -1,4 +1,4 @@
-(defproject org.clojars.daaku/sqjson "0.2.0"
+(defproject org.clojars.daaku/sqjson "0.3.0"
   :description "Treat SQLite as a JSON DB."
   :url "https://github.com/daaku/sqjson-clj"
   :scm {:name "git" :url "https://github.com/daaku/sqjson-clj"}
