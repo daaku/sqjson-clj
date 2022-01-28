@@ -7,7 +7,8 @@
             [jsonista.tagged :as jt]
             [next.jdbc :as jdbc]
             [next.jdbc.result-set :as rs])
-  (:import (clojure.lang Keyword PersistentHashSet)))
+  (:import [clojure.lang Keyword PersistentHashSet]
+           [daaku.ulid ULID]))
 
 (def ^:private jdbc-opts {:builder-fn rs/as-arrays})
 
@@ -148,7 +149,7 @@
 (defn- add-id [doc]
   (if (contains? doc :id)
     doc
-    (assoc doc :id (.toString (java.util.UUID/randomUUID)))))
+    (assoc doc :id (ULID/gen))))
 
 (defmacro ^:private one-doc [ds params]
   `(some-> (jdbc/execute-one! ~ds ~params jdbc-opts)
