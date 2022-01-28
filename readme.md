@@ -8,7 +8,3 @@ Treat SQLite as a JSON DB.
 [![Build](https://github.com/daaku/sqjson-clj/workflows/build/badge.svg)](https://github.com/daaku/sqjson-clj/actions?query=workflow%3Abuild)
 
 Documentation: https://cljdoc.org/d/org.clojars.daaku/sqjson
-
-TODO:
-- limit, order-by
-- make opts work

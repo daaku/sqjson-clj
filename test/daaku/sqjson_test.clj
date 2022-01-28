@@ -7,6 +7,7 @@
 
 (def yoda {:name "yoda" :movie :star-wars :age 900})
 (def leia {:name "leia" :movie :star-wars :age 60})
+(def rey {:name "rey" :movie :star-wars :age 35})
 
 (defn- make-test-db []
   (let [ds (jdbc/get-connection (jdbc/get-datasource "jdbc:sqlite::memory:"))]
@@ -77,6 +78,13 @@
 (deftest where-is-not-null
   (where-test [:<> :c1 nil]
               ["c1 is not null"]))
+
+(deftest encode-query
+  (map (fn [[in out]]
+         (is (= out (apply sqjson/encode-query in))))
+       [[{:a 1} :order-by [:id] :limit 2 :offset 3]
+        ["json_extract(data, '$.a')=? order by json_extract(data, '$.id') limit ? offset ?"
+         [1 5 10]]]))
 
 (deftest unique-id-index
   (let [db (make-test-db)
@@ -166,8 +174,19 @@
 (deftest select
   (let [db (make-test-db)
         yoda (sqjson/insert db yoda)
-        leia (sqjson/insert db leia)]
-    (is (= #{yoda leia} (set (sqjson/select db {:movie :star-wars}))))))
+        leia (sqjson/insert db leia)
+        rey (sqjson/insert db rey)]
+    (is (= #{yoda leia rey} (set (sqjson/select db {:movie :star-wars}))))
+    (is (= #{rey} (set (sqjson/select db {:movie :star-wars}
+                                      :order-by [:age]
+                                      :limit 1))))
+    (is (= #{yoda leia} (set (sqjson/select db {:movie :star-wars}
+                                            :order-by [[:age :desc]]
+                                            :limit 2))))
+    (is (= #{leia} (set (sqjson/select db {:movie :star-wars}
+                                       :order-by [[:age :desc]]
+                                       :limit 1
+                                       :offset 1))))))
 
 (deftest select-empty
   (is (empty? (sqjson/select (make-test-db) {}))))

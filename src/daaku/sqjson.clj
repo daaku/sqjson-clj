@@ -107,7 +107,10 @@
     :like " like "
     :not-like " not like "
     :in " in "
-    :not-in " not in "))
+    :not-in " not in "
+    :asc " asc"
+    :desc " desc"
+    :nulls-first " nulls first"))
 
 (defn- encode-where-seq [[op & va :as where]]
   (cond (contains? #{:= :> :>= :< :<= :<> :like :not-like} op)
@@ -145,6 +148,23 @@
 
         :else
         (throw (ex-info "unexpected where" {:where where}))))
+
+(defn encode-query [where {:keys [order-by limit offset]}]
+  (let [[where-sql params] (encode-where where)]
+    [(str/join " "
+               (remove nil?
+                       [where-sql
+                        (when order-by
+                          (str "order by "
+                               (str/join ", " (map #(if (keyword? %)
+                                                      (encode-path %)
+                                                      (let [[p op] %]
+                                                        (str (encode-path p)
+                                                             (op-str op))))
+                                                   order-by))))
+                        (when limit "limit ?")
+                        (when offset "offset ?")]))
+     (concat params (remove nil? [limit offset]))]))
 
 (defn- add-id [doc]
   (if (contains? doc :id)
@@ -196,8 +216,8 @@
 (defn count [ds where]
   (one-val ds :count where nil :count))
 
-(defn select [ds where]
-  (let [[sql params] (encode-where where)]
+(defn select [ds where & opts]
+  (let [[sql params] (encode-query where opts)]
     (map (comp decode-doc first)
          (rest (jdbc/execute! ds (concat [(str (:select *opts*) sql)] params)
                               jdbc-opts)))))
