@@ -80,11 +80,12 @@
               ["c1 is not null"]))
 
 (deftest encode-query
-  (map (fn [[in out]]
-         (is (= out (apply sqjson/encode-query in))))
-       [[{:a 1} :order-by [:id] :limit 2 :offset 3]
-        ["json_extract(data, '$.a')=? order by json_extract(data, '$.id') limit ? offset ?"
-         [1 5 10]]]))
+  (run! (fn [[where opts out]]
+          (is (= out (sqjson/encode-query where opts))))
+        [[{:a 1}
+          {:order-by [:id] :limit 2 :offset 3}
+          ["json_extract(data, '$.a')=? order by json_extract(data, '$.id') limit ? offset ?"
+           [1 2 3]]]]))
 
 (deftest unique-id-index
   (let [db (make-test-db)
