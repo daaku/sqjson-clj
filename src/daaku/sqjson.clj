@@ -51,7 +51,7 @@
    :upsert (str "insert into " table "(data) values(?) "
                 "on conflict(json_extract(data, '$.id')) do update "
                 "set data = excluded.data returning data")
-   :count (str "select count(*) as count from " table " where ")
+   :count (str "select count(*) from " table " where ")
    :mapper mapper})
 
 (def ^:dynamic *opts* (make-options {}))
@@ -181,11 +181,11 @@
      (one-doc ~ds (concat [(str (~sql-key *opts*) sql# ~sql-suffix)]
                           ~params-prefix params#))))
 
-(defmacro ^:private one-val [ds sql-key where params-prefix kw]
+(defmacro ^:private one-val [ds sql-key where params-prefix]
   `(let [[sql# params#] (encode-where ~where)]
      (-> (jdbc/execute-one! ~ds (concat [(str (~sql-key *opts*) sql#)]
-                                        ~params-prefix params#))
-         ~kw)))
+                                        ~params-prefix params#)
+                            jdbc-opts))))
 
 (defn insert [ds doc]
   (one-doc ds [(:insert *opts*) (-> doc add-id encode-doc)]))
@@ -197,14 +197,14 @@
   (one-where ds :delete-one " limit 1) returning data" where nil))
 
 (defn delete-all [ds where]
-  (one-val ds :delete-all where nil :next.jdbc/update-count))
+  (:next.jdbc/update-count (one-val ds :delete-all where nil)))
 
 (defn patch [ds where patch]
   (one-where ds :patch-one " limit 1) returning data" where
              [(encode-doc patch)]))
 
 (defn patch-all [ds where patch]
-  (one-val ds :patch-all where [(encode-doc patch)] :next.jdbc/update-count))
+  (:next.jdbc/update-count (one-val ds :patch-all where [(encode-doc patch)])))
 
 (defn replace [ds where doc]
   (one-where ds :replace-one " limit 1) returning data" where
@@ -214,7 +214,7 @@
   (one-doc ds [(:upsert *opts*) (-> doc add-id encode-doc)]))
 
 (defn count [ds where]
-  (one-val ds :count where nil :count))
+  (first (one-val ds :count where nil)))
 
 (defn select [ds where & opts]
   (let [[sql params] (encode-query where opts)]
