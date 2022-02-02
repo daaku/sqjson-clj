@@ -198,3 +198,17 @@
     (sqjson/insert db yoda)
     (sqjson/insert db leia)
     (is (= 2 (sqjson/delete-all db {})))))
+
+(deftest count-where-like
+  (let [db (make-test-db)]
+    (jdbc/execute! db [(str "create index if not exists doc_blob_url on doc("
+                            (sqjson/encode-path :url) " collate nocase) "
+                            "where " (sqjson/encode-path :type)
+                            " = '" (sqjson/encode-doc :blob) "'")])
+    (sqjson/insert db {:type :blob :url "abc1"})
+    (sqjson/insert db {:type :blob :url "abc2"})
+    (sqjson/insert db {:type :blob :url "def1"})
+    (sqjson/insert db {:type :blob :url "def2"})
+    (is (= 2 (sqjson/count db [:and
+                               [:= :type :blob]
+                               [:like :url "abc%"]])))))
