@@ -63,9 +63,12 @@
   (j/read-value s (:mapper *opts*)))
 
 (defn encode-sql-param [v]
-  (if (or (string? v) (number? v) (boolean? v))
-    v
-    (encode-doc v)))
+  (cond
+    (nil? v)     "null"
+    (number? v)  (str v)
+    (boolean? v) (str v)
+    (string? v)  (str \' (str/replace v "'" "''") \')
+    :else        (encode-sql-param (encode-doc v))))
 
 (defn encode-path [p]
   (str "json_extract(data, '$." (name p) "')"))
@@ -78,23 +81,22 @@
 (declare encode-where)
 
 (defn- encode-where-map [where]
-  (let [[sql params]
-        (reduce (fn [[sql params] [p v]]
-                  [(conj! sql (str (encode-path p) "=?"))
-                   (conj! params (encode-sql-param v))])
-                [(transient []) (transient [])]
+  ; FIXME is null / is not null
+  (let [sql
+        (reduce (fn [sql [p v]]
+                  (conj! sql (str (encode-path p) "="
+                                  (encode-sql-param v))))
+                (transient [])
                 where)]
-    [(join-sql :and (persistent! sql)) (persistent! params)]))
+    (join-sql :and (persistent! sql))))
 
 (defn- encode-where-seq-join [op va]
-  (let [[sql params]
-        (reduce (fn [[sql params] where]
-                  (let [[sql' params'] (encode-where where)]
-                    [(conj! sql sql')
-                     (conj! params params')]))
-                [(transient []) (transient [])]
+  (let [sql
+        (reduce (fn [sql where]
+                  (conj! sql (encode-where where)))
+                (transient [])
                 va)]
-    [(join-sql op (persistent! sql)) (apply concat (persistent! params))]))
+    (join-sql op (persistent! sql))))
 
 (defn- op-str [op]
   (case op
@@ -116,29 +118,28 @@
   (cond (contains? #{:= :> :>= :< :<= :<> :like :not-like} op)
         (let [[p v] va]
           (cond (and (nil? v) (= op :=))
-                [(str (encode-path p) " is null") nil]
+                (str (encode-path p) " is null")
 
                 (and (nil? v) (= op :<>))
-                [(str (encode-path p) " is not null") nil]
+                (str (encode-path p) " is not null")
 
                 :else
-                [(str (encode-path p) (op-str op) "?") [(encode-sql-param v)]]))
+                (str (encode-path p) (op-str op) (encode-sql-param v))))
 
         (contains? #{:or :and} op)
         (encode-where-seq-join op (remove nil? va))
 
         (contains? #{:in :not-in} op)
         (let [[p v] va]
-          [(str (encode-path p) (op-str op) "("
-                (str/join "," (repeat (clojure.core/count v) "?")) ")")
-           (map encode-sql-param v)])
+          (str (encode-path p) (op-str op) "("
+               (str/join "," (map encode-sql-param v)) ")"))
 
         :else
         (throw (ex-info "unexpected where" {:where where}))))
 
 (defn encode-where [where]
   (cond (empty? where)
-        ["true"]
+        "true"
 
         (map? where)
         (encode-where-map where)
@@ -150,7 +151,7 @@
         (throw (ex-info "unexpected where" {:where where}))))
 
 (defn encode-query [where {:keys [order-by limit offset]}]
-  (let [[where-sql params] (encode-where where)]
+  (let [where-sql (encode-where where)]
     [(str/join " "
                (remove nil?
                        [where-sql
@@ -164,7 +165,7 @@
                                                    order-by))))
                         (when limit "limit ?")
                         (when offset "offset ?")]))
-     (concat params (remove nil? [limit offset]))]))
+     (remove nil? [limit offset])]))
 
 (defn- add-id [doc]
   (if (contains? doc :id)
@@ -176,15 +177,13 @@
            first
            decode-doc))
 
-(defmacro ^:private one-where [ds sql-key sql-suffix where params-prefix]
-  `(let [[sql# params#] (encode-where ~where)]
-     (one-doc ~ds (concat [(str (~sql-key *opts*) sql# ~sql-suffix)]
-                          ~params-prefix params#))))
+(defmacro ^:private one-where [ds sql-key sql-suffix where params]
+  `(let [sql# (encode-where ~where)]
+     (one-doc ~ds (concat [(str (~sql-key *opts*) sql# ~sql-suffix)] ~params))))
 
-(defmacro ^:private one-val [ds sql-key where params-prefix]
-  `(let [[sql# params#] (encode-where ~where)]
-     (-> (jdbc/execute-one! ~ds (concat [(str (~sql-key *opts*) sql#)]
-                                        ~params-prefix params#)
+(defmacro ^:private one-val [ds sql-key where params]
+  `(let [sql# (encode-where ~where)]
+     (-> (jdbc/execute-one! ~ds (concat [(str (~sql-key *opts*) sql#)] ~params)
                             jdbc-opts))))
 
 (defn insert [ds doc]

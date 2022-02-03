@@ -15,10 +15,11 @@
     ds))
 
 (deftest encode-sql-param
-  (is (= (sqjson/encode-sql-param "a") "a"))
-  (is (= (sqjson/encode-sql-param 1) 1))
-  (is (= (sqjson/encode-sql-param true) true))
-  (is (= (sqjson/encode-sql-param ["a"]) "[\"a\"]")))
+  (is (= (sqjson/encode-sql-param "a") "'a'"))
+  (is (= (sqjson/encode-sql-param 1) "1"))
+  (is (= (sqjson/encode-sql-param true) "true"))
+  (is (= (sqjson/encode-sql-param :answer) "'[\"!kw\",\"answer\"]'"))
+  (is (= (sqjson/encode-sql-param ["a"]) "'[\"a\"]'")))
 
 (deftest where-unexpected
   (is (thrown? RuntimeException #"unexpected where"
@@ -32,60 +33,60 @@
       (str/replace "c2" (sqjson/encode-path "c2"))))
 
 (defn- where-test [in out]
-  (is (= [(where-sql (first out)) (seq (rest out))] (sqjson/encode-where in))))
+  (is (= (where-sql out) (sqjson/encode-where in))))
 
 (deftest where-map
-  (where-test {:c1 1} ["c1=?" 1]))
+  (where-test {:c1 1} "c1=1"))
 
 (deftest where-map-and
-  (where-test {:c1 1 :c2 2} ["(c1=? and c2=?)" 1 2]))
+  (where-test {:c1 1 :c2 2} "(c1=1 and c2=2)"))
 
 (deftest where-seq
-  (where-test [:> :c1 1] ["c1>?" 1]))
+  (where-test [:> :c1 1] "c1>1"))
 
 (deftest where-seq-and
   (where-test [:and [:= :c1 1] [:> :c2 2]]
-              ["(c1=? and c2>?)" 1 2]))
+              "(c1=1 and c2>2)"))
 
 (deftest where-seq-or
   (where-test [:or [:= :c1 1] [:> :c2 2]]
-              ["(c1=? or c2>?)" 1 2]))
+              "(c1=1 or c2>2)"))
 
 (deftest where-seq-with-nil
   (where-test [:or [:= :c1 1] nil]
-              ["c1=?" 1]))
+              "c1=1"))
 
 (deftest where-like
   (where-test [:like :c1 1]
-              ["c1 like ?" 1]))
+              "c1 like 1"))
 
 (deftest where-not-like
   (where-test [:not-like :c1 1]
-              ["c1 not like ?" 1]))
+              "c1 not like 1"))
 
 (deftest where-in
   (where-test [:in :c1 [1 2]]
-              ["c1 in (?,?)" 1 2]))
+              "c1 in (1,2)"))
 
 (deftest where-not-in
   (where-test [:not-in :c1 [1 2]]
-              ["c1 not in (?,?)" 1 2]))
+              "c1 not in (1,2)"))
 
 (deftest where-is-null
   (where-test [:= :c1 nil]
-              ["c1 is null"]))
+              "c1 is null"))
 
 (deftest where-is-not-null
   (where-test [:<> :c1 nil]
-              ["c1 is not null"]))
+              "c1 is not null"))
 
 (deftest encode-query
   (run! (fn [[where opts out]]
           (is (= out (sqjson/encode-query where opts))))
         [[{:a 1}
           {:order-by [:id] :limit 2 :offset 3}
-          ["json_extract(data, '$.a')=? order by json_extract(data, '$.id') limit ? offset ?"
-           [1 2 3]]]]))
+          ["json_extract(data, '$.a')=1 order by json_extract(data, '$.id') limit ? offset ?"
+           [2 3]]]]))
 
 (deftest unique-id-index
   (let [db (make-test-db)
